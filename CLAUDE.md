@@ -20,6 +20,7 @@
 - Prettier for formatting (double quotes, semicolons, trailing commas).
 - Named exports preferred over default exports.
 - React components are function components with hooks.
+- **Tailwind CSS v4** for styling — use utility classes, avoid custom CSS.
 
 ## File Organization
 

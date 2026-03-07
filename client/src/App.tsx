@@ -11,11 +11,14 @@ export function App() {
   }, []);
 
   return (
-    <main>
-      <h1>Measure</h1>
-      <p>A web-based tracking app.</p>
-      <p>
-        Server: <code>{status}</code>
+    <main className="mx-auto mt-16 max-w-xl p-8">
+      <h1 className="mb-2 text-3xl font-bold text-gray-900">Measure</h1>
+      <p className="text-gray-700">A web-based tracking app.</p>
+      <p className="text-gray-700">
+        Server:{" "}
+        <code className="rounded bg-gray-200 px-1.5 py-0.5 text-sm">
+          {status}
+        </code>
       </p>
     </main>
   );
