@@ -34,7 +34,7 @@ export function FoodLogger({
   };
 
   return (
-    <div className="food-logger">
+    <div className="bg-mint rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] text-white relative overflow-hidden">
       <input
         type="file"
         accept="image/*"
@@ -44,25 +44,29 @@ export function FoodLogger({
         onChange={handleFileChange}
       />
 
-      <div className="food-logger-content">
+      <div className="relative z-[1] flex flex-col items-center justify-center gap-3 text-center">
         <div
-          className="food-logger-button"
+          className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center cursor-pointer transition-colors duration-200 hover:bg-white/30"
           onClick={() => fileInputRef.current?.click()}
         >
           {isProcessing ? (
-            <Loader2 className="food-logger-icon spinning" />
+            <Loader2 className="w-8 h-8 text-white animate-spin" />
           ) : (
-            <Camera className="food-logger-icon" />
+            <Camera className="w-8 h-8 text-white" />
           )}
         </div>
         <div>
-          <h2 className="food-logger-title">Log Meal</h2>
-          <p className="food-logger-subtitle">Take a photo to auto-track</p>
+          <h2 className="text-sm tracking-[0.1em] uppercase font-medium">
+            Log Meal
+          </h2>
+          <p className="text-xs text-white/70 mt-1">
+            Take a photo to auto-track
+          </p>
         </div>
       </div>
 
       <svg
-        className="food-logger-wave"
+        className="absolute bottom-0 left-0 w-full h-[85%] opacity-20 pointer-events-none"
         preserveAspectRatio="none"
         viewBox="0 0 100 100"
       >

@@ -20,6 +20,7 @@
 - Prettier for formatting (double quotes, semicolons, trailing commas).
 - Named exports preferred over default exports.
 - React components are function components with hooks.
+- **Tailwind CSS v4** for styling via `@tailwindcss/vite` plugin. Custom theme colors (sage, cream, sand, forest, mint) defined in `client/src/index.css` using `@theme`. Prefer Tailwind utility classes over custom CSS.
 
 ## File Organization
 
