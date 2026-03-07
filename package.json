@@ -1,0 +1,27 @@
+{
+  "name": "measure",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A web-based tracking app",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client && npm run build -w server",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,css,md}\""
+  },
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "concurrently": "^9.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.5.0"
+  }
+}

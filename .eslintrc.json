@@ -1,0 +1,21 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
+  ],
+  "overrides": [
+    {
+      "files": ["client/src/**/*.{ts,tsx}"],
+      "plugins": ["react-hooks"],
+      "extends": ["plugin:react-hooks/recommended"],
+      "parserOptions": {
+        "ecmaFeatures": { "jsx": true }
+      }
+    }
+  ],
+  "ignorePatterns": ["dist", "node_modules"]
+}
