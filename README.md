@@ -1,11 +1,11 @@
-# Measure
+# BALANCE
 
 A web-based tracking app.
 
 ## Project Structure
 
 ```
-measure/
+balance/
 ├── client/          # React + TypeScript frontend (Vite)
 │   └── src/
 │       ├── App.tsx

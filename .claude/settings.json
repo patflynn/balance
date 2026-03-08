@@ -1,0 +1,6 @@
+{
+  "statusLine": {
+    "command": "cwd=$(jq -r '.workspace.current_dir'); branch=$(git -C \"$cwd\" --no-optional-locks branch --show-current 2>/dev/null); if [ -n \"$branch\" ]; then echo \"balance ($branch)\"; else echo \"balance\"; fi",
+    "type": "command"
+  }
+}

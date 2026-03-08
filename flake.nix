@@ -1,5 +1,5 @@
 {
-  description = "Measure — a web-based tracking app";
+  description = "BALANCE — a web-based tracking app";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -21,7 +21,7 @@
           ];
 
           shellHook = ''
-            echo "Measure dev environment loaded"
+            echo "BALANCE dev environment loaded"
             echo "Node $(node --version) | npm $(npm --version)"
           '';
         };
