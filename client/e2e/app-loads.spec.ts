@@ -12,6 +12,7 @@ const DEFAULT_METRIC_NAMES = [
   "Sleepiness",
   "Water (Cups)",
   "Alcohol (Units)",
+  "Caffeine (Cups)",
 ];
 
 test.describe("App loads", () => {
@@ -24,7 +25,7 @@ test.describe("App loads", () => {
     // Verify header
     await expect(page.getByTestId("app-header")).toHaveText("Balance");
 
-    // Verify all 11 default metrics are visible
+    // Verify all 12 default metrics are visible
     for (const name of DEFAULT_METRIC_NAMES) {
       await expect(page.getByText(name, { exact: true })).toBeVisible();
     }
