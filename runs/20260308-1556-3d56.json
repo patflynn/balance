@@ -1,0 +1,16 @@
+{
+  "id": "20260308-1556-3d56",
+  "prompt": "You are updating docs/PLAN.md on the branch from PR #13 to address review feedback. Check out the PR branch first, then make these changes:\n\n1. **Remove frequency field, simplify to just schedule**: In the Metric data model, remove the 'frequency' field. The schedule array alone determines how often a metric is tracked. If schedule is empty or undefined, it's tracked once daily with no notification. Update any references to frequency elsewhere in the doc.\n\n2. **Single logs sheet instead of tab-per-metric**: In the Google Sheets sync section, change the design from 'each metric gets a sheet/tab' to:\n   - A single 'Logs' sheet with columns: timestamp, metricId, metricName, value, synced\n   - A separate 'Metrics' sheet to store metric definitions\n   This is simpler, scales better, and makes cross-metric analysis easier.\n\n3. **Sync metric definitions too**: Extend the SyncBackend interface to also sync metric configs:\n   ```typescript\n   interface SyncBackend {\n     connect(): Promise\u003cvoid\u003e;\n     pushEntries(entries: LogEntry[]): Promise\u003cvoid\u003e;\n     pullEntries(since: number): Promise\u003cLogEntry[]\u003e;\n     pushMetrics(metrics: Metric[]): Promise\u003cvoid\u003e;\n     pullMetrics(since: number): Promise\u003cMetric[]\u003e;\n     disconnect(): Promise\u003cvoid\u003e;\n   }\n   ```\n\n4. **Add Android-only note**: Add a note near the PWA/notifications section that this is Android-only for now. iOS PWA limitations (no background sync, no local scheduled notifications) make it impractical there currently.\n\nMake sure to update ALL references throughout the doc that are affected by these changes. Commit and push to the existing PR branch. Do NOT create a new PR.",
+  "issue": null,
+  "branch": "agent/20260308-1556-3d56",
+  "worktree": "/tmp/klaus-sessions/measure/20260308-1556-3d56",
+  "tmux_pane": "%63",
+  "budget": "5.00",
+  "log_file": "/home/patrick/.klaus/sessions/session-20260308-0946-3f9e/logs/20260308-1556-3d56.jsonl",
+  "created_at": "2026-03-08T15:56:49-04:00",
+  "cost_usd": 0.76145075,
+  "duration_ms": 109901,
+  "pr_url": null,
+  "target_repo": "measure",
+  "clone_dir": "/home/patrick/hack/measure"
+}
