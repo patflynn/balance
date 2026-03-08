@@ -11,6 +11,9 @@ export default defineConfig(({ command }) => ({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
+      devOptions: {
+        enabled: true,
+      },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
       },
