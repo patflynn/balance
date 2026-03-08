@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { openDB, IDBPDatabase } from "idb";
 import { Metric, LogEntry } from "./types";
+import { SyncBackend } from "./sync/interface";
+import { GoogleSheetsBackend } from "./sync/google-sheets";
 
 const DB_NAME = "balance";
 const DB_VERSION = 1;
+const SYNC_CONNECTED_KEY = "balance_sync_connected";
 
 export const DEFAULT_METRICS: Metric[] = [
   {
@@ -135,6 +138,9 @@ export function useAppStore() {
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [syncConnected, setSyncConnected] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const syncRef = useRef<SyncBackend | null>(null);
 
   // Load from IndexedDB on mount
   useEffect(() => {
@@ -165,17 +171,47 @@ export function useAppStore() {
     };
   }, []);
 
-  const addLog = useCallback((metricId: string, value: number) => {
-    const entry: LogEntry = {
-      id: Date.now().toString(),
-      metricId,
-      value,
-      timestamp: Date.now(),
-      synced: false,
-    };
-    setLogs((prev) => [entry, ...prev]);
-    getDb().then((db) => db.put("logs", entry));
-  }, []);
+  // Try to reconnect sync on load if previously connected
+  useEffect(() => {
+    if (!loaded) return;
+    const wasConnected = localStorage.getItem(SYNC_CONNECTED_KEY) === "true";
+    if (wasConnected) {
+      const backend = new GoogleSheetsBackend();
+      backend
+        .connect()
+        .then(() => {
+          syncRef.current = backend;
+          setSyncConnected(true);
+        })
+        .catch(() => {
+          // Can't reconnect silently (OAuth requires user gesture) — clear flag
+          localStorage.removeItem(SYNC_CONNECTED_KEY);
+        });
+    }
+  }, [loaded]);
+
+  const addLog = useCallback(
+    (metricId: string, value: number) => {
+      const entry: LogEntry = {
+        id: Date.now().toString(),
+        metricId,
+        value,
+        timestamp: Date.now(),
+        synced: false,
+      };
+      setLogs((prev) => [entry, ...prev]);
+      getDb().then((db) => db.put("logs", entry));
+
+      // Push to sync backend if connected
+      if (syncRef.current?.isConnected()) {
+        syncRef.current.pushEntries([entry]).then(() => {
+          entry.synced = true;
+          getDb().then((db) => db.put("logs", entry));
+        });
+      }
+    },
+    [],
+  );
 
   const addMetric = useCallback(
     (metric: Omit<Metric, "id" | "order" | "enabled">) => {
@@ -191,5 +227,84 @@ export function useAppStore() {
     [metrics.length],
   );
 
-  return { metrics, logs, addLog, addMetric, loaded };
+  const connectSync = useCallback(async () => {
+    const backend = new GoogleSheetsBackend();
+    await backend.connect();
+    syncRef.current = backend;
+    setSyncConnected(true);
+    localStorage.setItem(SYNC_CONNECTED_KEY, "true");
+  }, []);
+
+  const disconnectSync = useCallback(async () => {
+    if (syncRef.current) {
+      await syncRef.current.disconnect();
+      syncRef.current = null;
+    }
+    setSyncConnected(false);
+    localStorage.removeItem(SYNC_CONNECTED_KEY);
+  }, []);
+
+  const syncNow = useCallback(async () => {
+    const backend = syncRef.current;
+    if (!backend?.isConnected()) return;
+
+    setSyncing(true);
+    try {
+      // Push unsynced entries
+      const db = await getDb();
+      const allLogs: LogEntry[] = await db.getAll("logs");
+      const unsynced = allLogs.filter((l) => !l.synced);
+
+      if (backend instanceof GoogleSheetsBackend) {
+        backend.setMetricsNameMap(metrics);
+      }
+
+      if (unsynced.length > 0) {
+        await backend.pushEntries(unsynced);
+        const tx = db.transaction("logs", "readwrite");
+        for (const log of unsynced) {
+          await tx.store.put({ ...log, synced: true });
+        }
+        await tx.done;
+        setLogs((prev) =>
+          prev.map((l) => (l.synced ? l : { ...l, synced: true })),
+        );
+      }
+
+      // Push metrics
+      await backend.pushMetrics(metrics);
+
+      // Pull new entries
+      const latestTimestamp = allLogs.reduce(
+        (max, l) => Math.max(max, l.timestamp),
+        0,
+      );
+      const pulled = await backend.pullEntries(latestTimestamp);
+      if (pulled.length > 0) {
+        const txPull = db.transaction("logs", "readwrite");
+        for (const entry of pulled) {
+          await txPull.store.put(entry);
+        }
+        await txPull.done;
+        setLogs((prev) =>
+          [...prev, ...pulled].sort((a, b) => b.timestamp - a.timestamp),
+        );
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }, [metrics]);
+
+  return {
+    metrics,
+    logs,
+    addLog,
+    addMetric,
+    loaded,
+    syncConnected,
+    syncing,
+    connectSync,
+    disconnectSync,
+    syncNow,
+  };
 }
