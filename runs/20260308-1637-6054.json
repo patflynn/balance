@@ -1,0 +1,16 @@
+{
+  "id": "20260308-1637-6054",
+  "prompt": "Update the README.md with the app's premise, usage, and a screenshot. The screenshot is already at docs/screenshot.png in the repo (it was just added).\n\nRead the current README.md and docs/PLAN.md for context. Then rewrite README.md to include:\n\n## Content\n\n1. **Title**: Balance\n2. **One-line description**: A personal health and wellness tracker that's fast enough to actually use every day.\n3. **Screenshot**: Include the screenshot with ![Balance](docs/screenshot.png) — center it and keep it reasonable size\n4. **What it does** (2-3 sentences): Balance probes you throughout the day on health/wellness metrics. Tap a value to record, skip what feels baseline. The whole interaction takes 5 seconds.\n5. **Features**:\n   - 12 default metrics (mood, stress, energy, anxiety, fatigue, tension, headache, brain fog, sleepiness, water, alcohol, caffeine)\n   - Tap-to-record interaction (no save button)\n   - Offline-first with IndexedDB persistence\n   - Installable PWA (Android)\n   - Customizable metrics\n6. **Try it**: Link to https://patflynn.github.io/balance/\n7. **Development**: npm install, npm run dev, npm run test:e2e\n8. **Tech stack**: React, TypeScript, Vite, Tailwind CSS, IndexedDB, Playwright\n\nKeep it concise and clean. Don't include a detailed roadmap — the plan is in docs/PLAN.md.\n\nMake sure to git add docs/screenshot.png along with README.md.\n\nVerify lint and build pass, then create PR titled 'Update README with app description and screenshot'",
+  "issue": null,
+  "branch": "agent/20260308-1637-6054",
+  "worktree": "/tmp/klaus-sessions/measure/20260308-1637-6054",
+  "tmux_pane": "%74",
+  "budget": "5.00",
+  "log_file": "/home/patrick/.klaus/sessions/session-20260308-0946-3f9e/logs/20260308-1637-6054.jsonl",
+  "created_at": "2026-03-08T16:37:58-04:00",
+  "cost_usd": 0.44448099999999996,
+  "duration_ms": 72110,
+  "pr_url": "https://github.com/patflynn/balance/pull/18",
+  "target_repo": "measure",
+  "clone_dir": "/home/patrick/hack/measure"
+}
