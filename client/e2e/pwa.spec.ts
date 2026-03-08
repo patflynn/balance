@@ -1,10 +1,16 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("PWA", () => {
-  test("serves valid web manifest", async ({ page }) => {
+  test("has manifest link and serves valid manifest", async ({ page }) => {
     await page.goto("/");
 
-    const response = await page.request.get("/manifest.webmanifest");
+    const manifestLink = page.locator('link[rel="manifest"]');
+    await expect(manifestLink).toBeAttached();
+
+    const href = await manifestLink.getAttribute("href");
+    expect(href).toBeTruthy();
+
+    const response = await page.request.get(href!);
     expect(response.ok()).toBe(true);
 
     const manifest = await response.json();
