@@ -1,0 +1,16 @@
+{
+  "id": "20260308-1635-9a8b",
+  "prompt": "Commit and PR two small changes already made on main:\n\n1. client/src/store.ts — added Caffeine (Cups) as default metric m12 (0 to 5+, order 11)\n2. client/e2e/app-loads.spec.ts — added Caffeine to the expected metrics list, updated comment to say 12\n\nThe changes are on these two files in the repo at ~/hack/measure. Copy them into your worktree (read from ~/hack/measure/client/src/store.ts and ~/hack/measure/client/e2e/app-loads.spec.ts), verify lint and build pass, then create a PR titled 'Add Caffeine as default metric'",
+  "issue": null,
+  "branch": "agent/20260308-1635-9a8b",
+  "worktree": "/tmp/klaus-sessions/measure/20260308-1635-9a8b",
+  "tmux_pane": "%72",
+  "budget": "5.00",
+  "log_file": "/home/patrick/.klaus/sessions/session-20260308-0946-3f9e/logs/20260308-1635-9a8b.jsonl",
+  "created_at": "2026-03-08T16:35:14-04:00",
+  "cost_usd": 0.35697349999999994,
+  "duration_ms": 59771,
+  "pr_url": "https://github.com/patflynn/balance/pull/17",
+  "target_repo": "measure",
+  "clone_dir": "/home/patrick/hack/measure"
+}
