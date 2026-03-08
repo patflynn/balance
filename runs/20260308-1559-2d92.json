@@ -1,0 +1,16 @@
+{
+  "id": "20260308-1559-2d92",
+  "prompt": "Implement Phase 1 (Foundation) of the Balance plan. Read docs/PLAN.md for full context. Here's what to do:\n\n## 1. Update data model (client/src/types.ts)\n\nUpdate the Metric interface to add these fields:\n- schedule?: string[]    // notification times like ['09:00', '13:00', '18:00']\n- order: number          // display order\n- enabled: boolean       // user can disable without deleting\n\nUpdate LogEntry to add:\n- synced: boolean        // has this been synced to remote?\n\nKeep FoodLogEntry type but add a comment that it's deferred.\n\n## 2. Migrate from localStorage to IndexedDB\n\nReplace the localStorage-based store (client/src/store.ts) with IndexedDB using the 'idb' library (npm install idb).\n\nCreate an IndexedDB database called 'balance' with two object stores:\n- 'metrics' (keyPath: 'id') — stores Metric objects\n- 'logs' (keyPath: 'id', index on 'metricId' and 'timestamp') — stores LogEntry objects\n\nThe React hook useAppStore() should maintain the same API surface but read/write from IndexedDB instead of localStorage. Use React state for the in-memory copy and sync to IndexedDB on writes. Load from IndexedDB on mount.\n\nDefault metrics should be the same as current but with the new fields populated:\n- Mood, Stress, Energy, Anxiety, Fatigue, Tension, Headache, Brain Fog, Sleepiness, Water, Alcohol\n- order: 0, 1, 2, ... in the order listed\n- enabled: true for all\n- schedule: undefined for all (notifications come later)\n\nThe addLog function should set synced: false on new entries.\n\n## 3. Remove food tab from UI\n\nIn App.tsx:\n- Remove the Food tab button and the food tab content\n- Remove the FoodLogger component import\n- Remove the activeTab state (there's only one tab now)\n- Remove the backend health check (connectionStatus) — it's not needed for a client-only app\n- Clean up the header: keep app name 'Balance' and the bell icon\n- The UI should just show the list of metrics directly\n\nDo NOT delete client/src/components/FoodLogger.tsx — just stop importing it.\n\n## 4. Update CLAUDE.md\n\nAdd to the top of CLAUDE.md:\n- 'Usability must be delightful and quick' as a top-level project principle\n- Note that the app is a PWA health tracker (Android-only for now)\n- Note that data model is in types.ts, persistence is IndexedDB via idb library\n- Note the interaction model: tap to record (immediate, no save button), skip to not record\n\n## 5. Verification\n\n- Run 'npm run lint' and 'npm run build' — both must pass\n- Fix any TypeScript or lint errors before creating the PR\n\nCreate a PR titled 'Phase 1: Foundation — IndexedDB, updated data model, remove food tab'",
+  "issue": null,
+  "branch": "agent/20260308-1559-2d92",
+  "worktree": "/tmp/klaus-sessions/measure/20260308-1559-2d92",
+  "tmux_pane": "%64",
+  "budget": "5.00",
+  "log_file": "/home/patrick/.klaus/sessions/session-20260308-0946-3f9e/logs/20260308-1559-2d92.jsonl",
+  "created_at": "2026-03-08T15:59:41-04:00",
+  "cost_usd": 1.1266827499999998,
+  "duration_ms": 159484,
+  "pr_url": "https://github.com/patflynn/balance/pull/14",
+  "target_repo": "measure",
+  "clone_dir": "/home/patrick/hack/measure"
+}
