@@ -45,11 +45,33 @@ async function sheetsRequest(
         ...options.headers,
       },
     });
-    if (!retry.ok) throw new Error(`Sheets API error: ${retry.status}`);
+    if (!retry.ok) {
+      let message = `Sheets API error: ${retry.status}`;
+      try {
+        const errorData = await retry.json();
+        if (errorData?.error?.message) {
+          message = `Sheets API Error: ${errorData.error.message}`;
+        }
+      } catch {
+        // Ignore JSON parsing errors
+      }
+      throw new Error(message);
+    }
     return retry;
   }
 
-  if (!res.ok) throw new Error(`Sheets API error: ${res.status}`);
+  if (!res.ok) {
+    let message = `Sheets API error: ${res.status}`;
+    try {
+      const errorData = await res.json();
+      if (errorData?.error?.message) {
+        message = `Sheets API Error: ${errorData.error.message}`;
+      }
+    } catch {
+      // Ignore JSON parsing errors
+    }
+    throw new Error(message);
+  }
   return res;
 }
 

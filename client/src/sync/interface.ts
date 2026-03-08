@@ -8,4 +8,5 @@ export interface SyncBackend {
   pullMetrics(since: number): Promise<Metric[]>;
   disconnect(): Promise<void>;
   isConnected(): boolean;
+  setMetricsNameMap?(metrics: Metric[]): void;
 }

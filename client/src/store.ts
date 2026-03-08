@@ -192,11 +192,12 @@ export function useAppStore() {
 
   const addLog = useCallback(
     (metricId: string, value: number) => {
+      const now = Date.now();
       const entry: LogEntry = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         metricId,
         value,
-        timestamp: Date.now(),
+        timestamp: now,
         synced: false,
       };
       setLogs((prev) => [entry, ...prev]);
@@ -204,10 +205,19 @@ export function useAppStore() {
 
       // Push to sync backend if connected
       if (syncRef.current?.isConnected()) {
-        syncRef.current.pushEntries([entry]).then(() => {
-          entry.synced = true;
-          getDb().then((db) => db.put("logs", entry));
-        });
+        (async () => {
+          try {
+            await syncRef.current!.pushEntries([entry]);
+            const db = await getDb();
+            const syncedEntry = { ...entry, synced: true };
+            await db.put("logs", syncedEntry);
+            setLogs((prev) =>
+              prev.map((l) => (l.id === entry.id ? syncedEntry : l)),
+            );
+          } catch (error) {
+            console.error("Failed to sync new log entry:", error);
+          }
+        })();
       }
     },
     [],
@@ -255,7 +265,7 @@ export function useAppStore() {
       const allLogs: LogEntry[] = await db.getAll("logs");
       const unsynced = allLogs.filter((l) => !l.synced);
 
-      if (backend instanceof GoogleSheetsBackend) {
+      if (backend.setMetricsNameMap) {
         backend.setMetricsNameMap(metrics);
       }
 

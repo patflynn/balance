@@ -45,28 +45,32 @@ export function getAccessToken(): string | null {
   return null;
 }
 
+let authPromise: Promise<string> | null = null;
+
 export function requestAuth(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (!isGisLoaded()) {
-      reject(new Error("Google Identity Services not loaded"));
-      return;
-    }
+  if (!isGisLoaded()) {
+    return Promise.reject(new Error("Google Identity Services not loaded"));
+  }
 
-    if (!CLIENT_ID) {
-      reject(new Error("VITE_GOOGLE_CLIENT_ID is not configured"));
-      return;
-    }
+  if (!CLIENT_ID) {
+    return Promise.reject(new Error("VITE_GOOGLE_CLIENT_ID is not configured"));
+  }
 
-    const valid = getAccessToken();
-    if (valid) {
-      resolve(valid);
-      return;
-    }
+  const valid = getAccessToken();
+  if (valid) {
+    return Promise.resolve(valid);
+  }
 
+  if (authPromise) {
+    return authPromise;
+  }
+
+  authPromise = new Promise((resolve, reject) => {
     tokenClient = window.google!.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
       callback: (response: TokenResponse) => {
+        authPromise = null;
         if (response.error) {
           reject(new Error(response.error_description ?? response.error));
           return;
@@ -76,12 +80,15 @@ export function requestAuth(): Promise<string> {
         resolve(response.access_token);
       },
       error_callback: (error) => {
+        authPromise = null;
         reject(new Error(error.message));
       },
     });
 
     tokenClient.requestAccessToken();
   });
+
+  return authPromise;
 }
 
 export function clearAuth(): void {
