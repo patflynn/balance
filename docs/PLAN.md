@@ -25,9 +25,11 @@ Balance is a personal measurement tool. It probes the user at scheduled times th
 - **Opinionated defaults**: Ships with curated metrics (Mood, Stress, Energy, Anxiety, Fatigue, Tension, Headache, Brain Fog, Sleepiness, Water, Alcohol).
 - **Customizable**: Users can add/remove/reorder metrics with custom labels.
 - **1-5 scale** with left/right labels (e.g., Stress: Low → High).
-- **Per-metric frequency**: Some metrics are tracked multiple times per day (stress, anxiety, fatigue → 3x/day), others once daily. This is a property of the metric.
+- **Per-metric schedule**: Each metric has a configurable notification schedule (e.g., stress at 9am/1pm/6pm). If no schedule is set, it's tracked once daily with no notification.
 
 ### Scheduled Notifications (PWA)
+
+> **Android-only for now.** iOS PWA limitations (no background sync, no local scheduled notifications) make this impractical on iOS currently. Revisit when Apple improves PWA support.
 
 The app should proactively measure the user rather than waiting for them to remember:
 
@@ -35,7 +37,7 @@ The app should proactively measure the user rather than waiting for them to reme
 - **Push notifications** via Service Worker + Web Push API.
 - **Quick-response from notification**: Notification shows the metric name with action buttons (e.g., "Stress?" → [Low] [Med] [High]) mapping to scale ranges. User can respond without opening the app.
 - **Tap notification to open app** for a full check-in when multiple metrics are due.
-- **PWA requirement**: App must be installable (manifest.json, service worker) for notifications to work, especially on iOS (requires Add to Home Screen).
+- **PWA requirement**: App must be installable (manifest.json, service worker) for notifications to work.
 
 ### Food Logging (Deferred)
 
@@ -57,8 +59,8 @@ interface Metric {
   leftLabel: string;
   rightLabel: string;
   steps: number;           // default 5
-  frequency: number;       // times per day (1, 2, 3)
   schedule?: string[];     // notification times ["09:00", "13:00", "18:00"]
+                           // if empty/undefined, tracked once daily with no notification
   order: number;           // display order
   enabled: boolean;        // user can disable without deleting
 }
@@ -89,22 +91,28 @@ interface FoodLogEntry { ... }
 **How it works**:
 1. User authenticates with Google OAuth (client-side flow, no backend needed).
 2. App creates a Balance spreadsheet (or connects to an existing one).
-3. Each metric gets a sheet/tab. Rows are timestamped entries.
+3. Two sheets in the spreadsheet:
+   - **Logs** sheet — columns: `timestamp`, `metricId`, `metricName`, `value`, `synced`. All entries in one flat table.
+   - **Metrics** sheet — stores metric definitions (id, name, labels, scale, schedule, etc.). Keeps configs synced across devices.
 4. Sync is incremental: track `synced` flag on LogEntry, push unsynced entries on sync.
 5. Sync happens on app open, after recording, and periodically in background (Service Worker).
+
+**Why a single Logs sheet** instead of a tab per metric: simpler schema, scales to any number of metrics without sheet proliferation, and makes cross-metric analysis (filtering, pivoting, charting) easy in the spreadsheet itself.
 
 **Sync abstraction layer** — design a simple interface so backends are swappable:
 
 ```typescript
 interface SyncBackend {
   connect(): Promise<void>;
-  push(entries: LogEntry[]): Promise<void>;
-  pull(since: number): Promise<LogEntry[]>;
+  pushEntries(entries: LogEntry[]): Promise<void>;
+  pullEntries(since: number): Promise<LogEntry[]>;
+  pushMetrics(metrics: Metric[]): Promise<void>;
+  pullMetrics(since: number): Promise<Metric[]>;
   disconnect(): Promise<void>;
 }
 ```
 
-Google Sheets is the first implementation. CouchDB and remoteStorage are future implementations of the same interface.
+The interface syncs both log entries and metric definitions, so metric configs (names, labels, schedules) stay consistent across devices. Google Sheets is the first implementation. CouchDB and remoteStorage are future implementations of the same interface.
 
 ### Future Open Backend (Not Built Now)
 
@@ -162,7 +170,7 @@ balance/
 
 ### Phase 1: Foundation
 - Migrate from localStorage to IndexedDB
-- Update data model (add frequency, schedule, order, enabled, synced to metrics/entries)
+- Update data model (add schedule, order, enabled, synced to metrics/entries)
 - Remove food tab from UI (keep types for future)
 - Update CLAUDE.md with new conventions and UX principles (delightful, quick)
 - Add "usability must be delightful and quick" as a top-level project principle
