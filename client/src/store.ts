@@ -105,6 +105,15 @@ export const DEFAULT_METRICS: Metric[] = [
     order: 10,
     enabled: true,
   },
+  {
+    id: "m12",
+    name: "Caffeine (Cups)",
+    leftLabel: "0",
+    rightLabel: "5+",
+    steps: 5,
+    order: 11,
+    enabled: true,
+  },
 ];
 
 async function getDb(): Promise<IDBPDatabase> {
