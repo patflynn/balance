@@ -3,6 +3,7 @@ import { SyncBackend } from "./interface";
 import { requestAuth, getAccessToken, clearAuth } from "./google-auth";
 
 const SPREADSHEET_NAME = "Balance Data";
+const FOLDER_PATH = ["gunk.dev", "balance"];
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 
@@ -75,9 +76,47 @@ async function sheetsRequest(
   return res;
 }
 
-async function findSpreadsheet(): Promise<string | null> {
+async function findOrCreateFolder(
+  name: string,
+  parentId: string | null,
+): Promise<string> {
+  const parentClause = parentId
+    ? `'${parentId}' in parents`
+    : `'root' in parents`;
   const query = encodeURIComponent(
-    `name='${SPREADSHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
+    `name='${name}' and mimeType='application/vnd.google-apps.folder' and ${parentClause} and trashed=false`,
+  );
+  const res = await sheetsRequest(
+    `${DRIVE_API}?q=${query}&fields=files(id)`,
+  );
+  const data = await res.json();
+  const existing: string | undefined = data.files?.[0]?.id;
+  if (existing) return existing;
+
+  const createRes = await sheetsRequest(DRIVE_API, {
+    method: "POST",
+    body: JSON.stringify({
+      name,
+      mimeType: "application/vnd.google-apps.folder",
+      ...(parentId ? { parents: [parentId] } : {}),
+    }),
+  });
+  const created = await createRes.json();
+  return created.id;
+}
+
+async function resolveFolderPath(): Promise<string> {
+  let parentId: string | null = null;
+  for (const segment of FOLDER_PATH) {
+    parentId = await findOrCreateFolder(segment, parentId);
+  }
+  return parentId!;
+}
+
+async function findSpreadsheet(): Promise<string | null> {
+  const folderId = await resolveFolderPath();
+  const query = encodeURIComponent(
+    `name='${SPREADSHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and '${folderId}' in parents and trashed=false`,
   );
   const res = await sheetsRequest(
     `${DRIVE_API}?q=${query}&fields=files(id)`,
@@ -87,6 +126,9 @@ async function findSpreadsheet(): Promise<string | null> {
 }
 
 async function createSpreadsheet(): Promise<string> {
+  const folderId = await resolveFolderPath();
+
+  // Create the spreadsheet via Sheets API (no parent support)
   const res = await sheetsRequest(SHEETS_API, {
     method: "POST",
     body: JSON.stringify({
@@ -124,7 +166,16 @@ async function createSpreadsheet(): Promise<string> {
     }),
   });
   const data = await res.json();
-  return data.spreadsheetId;
+  const spreadsheetId: string = data.spreadsheetId;
+
+  // Move the spreadsheet into the target folder via Drive API
+  // addParents puts it in the folder, removeParents takes it out of root
+  await sheetsRequest(
+    `${DRIVE_API}/${spreadsheetId}?addParents=${folderId}&removeParents=root`,
+    { method: "PATCH" },
+  );
+
+  return spreadsheetId;
 }
 
 export class GoogleSheetsBackend implements SyncBackend {
