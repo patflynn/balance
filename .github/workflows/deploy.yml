@@ -40,7 +40,7 @@ jobs:
 
   build-and-push-staging:
     needs: deploy
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: staging
     permissions:
@@ -106,15 +106,18 @@ jobs:
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         if: steps.check.outputs.has_secret == 'true'
         env:
-          IMAGE_REF: registry.fly.io/balance-staging:${{ github.sha }}
+          COMMIT_SHA: ${{ github.sha }}
         with:
           github-token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
           script: |
+            const sha = process.env.COMMIT_SHA;
+            if (!/^[0-9a-f]{40}$/i.test(sha)) {
+              throw new Error(`Invalid SHA: ${sha}`);
+            }
+            const image = `registry.fly.io/balance-staging:${sha}`;
             await github.rest.repos.createDispatchEvent({
               owner: 'gunk-dev',
               repo: 'infra',
               event_type: 'balance-staging',
-              client_payload: {
-                image: process.env.IMAGE_REF
-              }
+              client_payload: { image }
             });
