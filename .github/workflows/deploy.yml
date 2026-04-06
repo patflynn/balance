@@ -42,29 +42,39 @@ jobs:
     needs: deploy
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment: staging
     permissions:
       contents: read
+    outputs:
+      pushed: ${{ steps.check.outputs.has_secret }}
     steps:
       - name: Check required secret
+        id: check
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           if [ -z "${FLY_API_TOKEN}" ]; then
             echo "::notice::FLY_API_TOKEN not set, skipping image push"
-            exit 1
+            echo "has_secret=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_secret=true" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        if: steps.check.outputs.has_secret == 'true'
         with:
           persist-credentials: false
       - uses: cachix/install-nix-action@08dcb3a5e62fa31e2da3d490afc4176ef55ecd72 # v30
+        if: steps.check.outputs.has_secret == 'true'
         with:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             accept-flake-config = true
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - name: Build OCI image
+        if: steps.check.outputs.has_secret == 'true'
         run: nix build .#oci-image
       - name: Push to Fly registry
+        if: steps.check.outputs.has_secret == 'true'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           IMAGE_REF: registry.fly.io/balance-staging:${{ github.sha }}
@@ -80,17 +90,21 @@ jobs:
     permissions:
       contents: read
     environment: staging
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && needs.build-and-push-staging.outputs.pushed == 'true'
     steps:
       - name: Check required secret
+        id: check
         env:
           INFRA_DISPATCH_TOKEN: ${{ secrets.INFRA_DISPATCH_TOKEN }}
         run: |
           if [ -z "${INFRA_DISPATCH_TOKEN}" ]; then
             echo "::notice::INFRA_DISPATCH_TOKEN not set, skipping dispatch"
-            exit 1
+            echo "has_secret=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_secret=true" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        if: steps.check.outputs.has_secret == 'true'
         env:
           IMAGE_REF: registry.fly.io/balance-staging:${{ github.sha }}
         with:
