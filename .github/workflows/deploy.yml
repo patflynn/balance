@@ -6,8 +6,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -15,6 +13,10 @@ concurrency:
 
 jobs:
   deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -35,3 +37,22 @@ jobs:
           path: client/dist
       - uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
         id: deployment
+
+  trigger-staging:
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: staging
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          github-token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: 'gunk-dev',
+              repo: 'infra',
+              event_type: 'balance-staging',
+              client_payload: {
+                sha: context.sha
+              }
+            });
