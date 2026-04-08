@@ -10,6 +10,7 @@ jobs:
     name: Dispatch Preview
     if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    environment: dispatch
     permissions:
       contents: read
       pull-requests: read
@@ -26,6 +27,7 @@ jobs:
     name: Dispatch Preview Cleanup
     if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    environment: dispatch
     permissions:
       contents: read
     steps:

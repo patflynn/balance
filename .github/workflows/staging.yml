@@ -13,6 +13,7 @@ jobs:
   dispatch-staging:
     name: Dispatch Staging
     runs-on: ubuntu-latest
+    environment: dispatch
     permissions:
       contents: read
     steps:
