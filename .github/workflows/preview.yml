@@ -1,126 +1,38 @@
-name: PR Preview
+name: Preview
 
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened, closed]
-
-permissions:
-  contents: read
+    branches: [main]
 
 jobs:
-  build-and-push:
-    if: github.event.action != 'closed'
+  dispatch-preview:
+    name: Dispatch Preview
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    environment: preview
     permissions:
       contents: read
-    outputs:
-      pushed: ${{ steps.check.outputs.has_secret }}
+      pull-requests: read
     steps:
-      - name: Check required secret
-        id: check
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: |
-          if [ -z "${FLY_API_TOKEN}" ]; then
-            echo "::notice::FLY_API_TOKEN not set, skipping image push"
-            echo "has_secret=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_secret=true" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        if: steps.check.outputs.has_secret == 'true'
+      - name: Dispatch to infra
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3
         with:
-          persist-credentials: false
-      - uses: cachix/install-nix-action@08dcb3a5e62fa31e2da3d490afc4176ef55ecd72 # v30
-        if: steps.check.outputs.has_secret == 'true'
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          extra_nix_config: |
-            accept-flake-config = true
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - name: Build OCI image
-        if: steps.check.outputs.has_secret == 'true'
-        run: nix build .#oci-image
-      - name: Push to Fly registry
-        if: steps.check.outputs.has_secret == 'true'
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          IMAGE_REF: registry.fly.io/balance-preview-${{ github.event.pull_request.number }}:${{ github.event.pull_request.head.sha }}
-        run: |
-          nix run nixpkgs#skopeo -- copy \
-            --dest-creds "x:${FLY_API_TOKEN}" \
-            "docker-archive:result" \
-            "docker://${IMAGE_REF}"
+          token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+          repository: gunk-dev/infra
+          event-type: balance-preview
+          client-payload: '{"pr_number": "${{ github.event.pull_request.number }}", "head_sha": "${{ github.event.pull_request.head.sha }}"}'
 
-  trigger-preview:
-    needs: build-and-push
-    if: github.event.action != 'closed' && needs.build-and-push.outputs.pushed == 'true'
+  dispatch-cleanup:
+    name: Dispatch Preview Cleanup
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    environment: preview
     permissions:
       contents: read
     steps:
-      - name: Check required secret
-        id: check
-        env:
-          INFRA_DISPATCH_TOKEN: ${{ secrets.INFRA_DISPATCH_TOKEN }}
-        run: |
-          if [ -z "${INFRA_DISPATCH_TOKEN}" ]; then
-            echo "::notice::INFRA_DISPATCH_TOKEN not set, skipping dispatch"
-            echo "has_secret=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_secret=true" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
-        if: steps.check.outputs.has_secret == 'true'
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          IMAGE_REF: registry.fly.io/balance-preview-${{ github.event.pull_request.number }}:${{ github.event.pull_request.head.sha }}
+      - name: Dispatch to infra
+        uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3
         with:
-          github-token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
-          script: |
-            await github.rest.repos.createDispatchEvent({
-              owner: 'gunk-dev',
-              repo: 'infra',
-              event_type: 'balance-preview',
-              client_payload: {
-                pr_number: process.env.PR_NUMBER,
-                image: process.env.IMAGE_REF
-              }
-            });
-
-  cleanup-preview:
-    if: github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    environment: preview
-    permissions:
-      contents: read
-    steps:
-      - name: Check required secret
-        id: check
-        env:
-          INFRA_DISPATCH_TOKEN: ${{ secrets.INFRA_DISPATCH_TOKEN }}
-        run: |
-          if [ -z "${INFRA_DISPATCH_TOKEN}" ]; then
-            echo "::notice::INFRA_DISPATCH_TOKEN not set, skipping dispatch"
-            echo "has_secret=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_secret=true" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
-        if: steps.check.outputs.has_secret == 'true'
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        with:
-          github-token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
-          script: |
-            await github.rest.repos.createDispatchEvent({
-              owner: 'gunk-dev',
-              repo: 'infra',
-              event_type: 'balance-preview-cleanup',
-              client_payload: {
-                pr_number: process.env.PR_NUMBER
-              }
-            });
+          token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+          repository: gunk-dev/infra
+          event-type: balance-preview-cleanup
+          client-payload: '{"pr_number": "${{ github.event.pull_request.number }}"}'
